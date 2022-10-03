@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -253,7 +254,11 @@ func check(userInfo UserInfo, num int) {
 		return
 	}
 
-	resp, _ := client.Do(req)
+	resp, e := client.Do(req)
+	if e != nil {
+		log.Fatalln(e.Error())
+		return
+	}
 	bytes, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(bytes))
 	defer resp.Body.Close()
@@ -268,7 +273,8 @@ func getCheckCode(num int, cookies []*http.Cookie) (string, []*http.Cookie) {
 	}
 	resp, e := client.Do(req)
 	if e != nil {
-		panic(e)
+		log.Fatalln(e.Error())
+		return "",nil
 	}
 	defer resp.Body.Close()
 	bytes, _ := io.ReadAll(resp.Body)
@@ -336,7 +342,7 @@ func login(userInfo UserInfo) []*http.Cookie {
 	req.Header.Add("Accept", "application/json")
 	resp, e := client.Do(req)
 	if e != nil {
-		panic(e)
+		log.Fatalln(e.Error())
 	}
 	defer resp.Body.Close()
 
@@ -365,7 +371,7 @@ func readCheckList() []UserInfo {
 
 	e := json.Unmarshal(bytes, &userInfo)
 	if e != nil {
-		panic(e)
+		log.Fatalln(e.Error())
 	}
 	return userInfo
 }
