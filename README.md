@@ -23,7 +23,7 @@
    3. 若是Linux 直接在命令窗口中键入以下命令(以Linux x86_64举例)
 
    ```shell
-   sudo chmod -X AutoCheck_linux_x86-64 ; ./AutoCheck_linux_x86-64
+   sudo chmod 7777 AutoCheck_linux_x86-64 ; ./AutoCheck_linux_x86-64
    ```
 
    4. 当程序运行后，可根据程序提示进行操作
