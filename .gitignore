@@ -1,3 +1,6 @@
 .history
 AutoCheck
 AutoCheck.exe
+.vscode
+checkList.json
+config.json

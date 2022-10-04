@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robfig/cron/v3"
+	"github.com/go-co-op/gocron"
 )
 
 func main() {
@@ -125,14 +125,7 @@ func collectInfo() {
 	startCheck()
 
 }
-func getTime(time string) (string, string, string) {
-	var second, min, hour string
-	strList := strings.Split(time, ":")
-	second = strList[2]
-	min = strList[1]
-	hour = strList[0]
-	return second, min, hour
-}
+
 func modifyConfig() {
 	fmt.Print("是否更改默认打卡时间 (default n/y):")
 	var choose string
@@ -177,23 +170,21 @@ func startCheck() {
 		fmt.Println("列表无待打卡成员,已跳转添加成员")
 		collectInfo()
 	}
-	cronTab := cron.New(cron.WithSeconds())
-	seM, minM, hourM := getTime(config.MorningTime)
-	seA, minA, hourA := getTime(config.AfternoonTime)
+	timezone, _ := time.LoadLocation("Asia/Shanghai")
+	cronTab := gocron.NewScheduler(timezone)
 
-	cronTab.AddFunc(seM+" "+minM+" "+hourM+" * * ?", func() {
+	cronTab.Every(1).Day().At(config.MorningTime).Do(func() {
 		for i := range userList {
-			check(userList[i], Morning)
+			go check(userList[i], Morning)
 		}
 	})
-	cronTab.AddFunc(seA+" "+minA+" "+hourA+" * * ?", func() {
+	cronTab.Every(1).Day().At(config.AfternoonTime).Do(func() {
 		for i := range userList {
-			check(userList[i], Afternoon)
+			go check(userList[i], Afternoon)
 		}
 	})
-	cronTab.Start()
-	defer cronTab.Stop()
-	select {}
+	cronTab.StartBlocking()
+
 }
 
 var config Config
@@ -274,7 +265,7 @@ func getCheckCode(num int, cookies []*http.Cookie) (string, []*http.Cookie) {
 	resp, e := client.Do(req)
 	if e != nil {
 		log.Fatalln(e.Error())
-		return "",nil
+		return "", nil
 	}
 	defer resp.Body.Close()
 	bytes, _ := io.ReadAll(resp.Body)
