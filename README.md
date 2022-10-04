@@ -18,16 +18,15 @@
 
 ## 使用方法
 
-   1. 解压压缩包，使用winRAR或者其他支持解压7z的程序进行解压
-   2. 了解自己即将运行程序的设备CPU架构，若非amd_x64，则无法运行
-   3. 若是Windows 那么直接双击exe文件运行即可
-   4. 若是Linux 直接在命令窗口中键入以下命令
+   1. 在[Release](https://github.com/Qinwusui/AutoXXTCheck-Go/release)中下载对应系统架构的可执行程序
+   2. 若是Windows 那么直接双击exe文件运行
+   3. 若是Linux 直接在命令窗口中键入以下命令(以Linux x86_64举例)
 
    ```shell
-   sudo chmod 777 ./AutoCheck ; ./AutoCheck
+   sudo chmod -X AutoCheck_linux_x86-64 ; ./AutoCheck_linux_x86-64
    ```
 
-   5. 当程序运行后，可根据程序提示进行操作
+   4. 当程序运行后，可根据程序提示进行操作
 
 # TODO
    
