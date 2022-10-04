@@ -28,6 +28,12 @@
 
    4. 当程序运行后，可根据程序提示进行操作
 
-# TODO
-   
-   解决程序在Android Terminal上运行时出现DNS解析失败的问题
+## 在Android Termux(以下简称终端)上运行
+
+   - [参见](https://qa.1r1g.com/sf/ask/2727134721/#)
+   - 在终端运行Golang程序时，Go会判断/etc/resolv.conf文件是否存在。当该文件不存在时，会默认使用localhost:53进行dns解析，所以才会导致域名解析失败。
+   - 解决方案
+     - termux安装zsh(网上有教程)
+     - 在termux中输入`tsu`后回车
+     - 输入`echo -e "nameserver 8.8.8.8" > /etc/resolv.conf`后回车
+     - 重新启动打卡程序 
