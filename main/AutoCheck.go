@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-co-op/gocron"
+	"gopkg.in/gomail.v2"
 )
 
 func main() {
@@ -63,6 +64,7 @@ type UserInfo struct {
 	ID       string `json:"id"`
 	Phone    string `json:"phone"`
 	Pwd      string `json:"pwd"`
+	Mail     string `json:"mail"`
 }
 type Config struct {
 	MorningTime   string `json:"morning"`
@@ -74,10 +76,19 @@ type LoginRes struct {
 	Url    string `json:"url"`
 	Status bool   `json:"status"`
 }
+type MailConfig struct {
+	Address string `json:"address"`
+	Pwd     string `json:"pwd"`
+	Port    int    `json:"port"`
+}
+type RespBody struct {
+	Msg     string `json:"msg"`
+	Success bool   `json:"success"`
+}
 
 func init() {
-	isExist, _ := PathExists("./config.json")
-	if !isExist {
+	configExist, _ := PathExists("./config.json")
+	if !configExist {
 		config := Config{
 			MorningTime:   "08:00:00",
 			AfternoonTime: "15:00:00",
@@ -85,8 +96,19 @@ func init() {
 		bytes, _ := json.Marshal(&config)
 		os.WriteFile("./config.json", bytes, 0777)
 	}
-	bytes, _ := os.ReadFile("./config.json")
-	_ = json.Unmarshal(bytes, &config)
+	configBytes, _ := os.ReadFile("./config.json")
+	_ = json.Unmarshal(configBytes, &config)
+
+	mailConfigExist, _ := PathExists("./mailConfig.json")
+	if !mailConfigExist {
+		mailConfig := MailConfig{
+			Address: "",
+			Pwd:     "",
+			Port:    0,
+		}
+		bytes, _ := json.Marshal(&mailConfig)
+		os.WriteFile("./mailConfig.json", bytes, 0777)
+	}
 }
 func collectInfo() {
 
@@ -112,6 +134,10 @@ func collectInfo() {
 
 		fmt.Print("请输入学习通密码：")
 		fmt.Scanln(&userInfo.Pwd)
+
+		fmt.Print("请输入一个邮箱(QQ邮箱最佳，用于[接收]打卡成功后的回执消息):")
+		fmt.Scanln(&userInfo.Mail)
+
 		saveUser(*userInfo)
 		var needContinue string
 		fmt.Print("是否继续添加?(default: n/y)")
@@ -158,7 +184,45 @@ func modifyConfig() {
 		}
 		fmt.Println("打卡时间更新完成...")
 	}
+	mailConfig := new(MailConfig)
+	mailConfigBytes, _ := os.ReadFile("./mailConfig.json")
+	_ = json.Unmarshal(mailConfigBytes, &mailConfig)
+	if mailConfig.Address == "" || mailConfig.Pwd == "" || mailConfig.Port == 0 {
+		addMail()
+	}
 	fmt.Println("当前设定打卡时间为:", config.MorningTime+"与"+config.AfternoonTime)
+}
+
+func addMail() {
+	var needSendMail string
+	fmt.Print(`是否需要添加一个发送邮件？
+=>下面是该邮箱的简介，请[认真]阅读
+1.程序将使用您提供的邮箱登录并发送邮件，[若您担心隐私泄露，请输入n并回车]
+2.该邮箱仅支持QQ邮箱，Outlook邮箱
+3.QQ邮箱需要使用[授权码]来登录，而Outlook邮箱可以直接使用邮箱密码登录
+3.1.获取授权码前请开启邮箱内的STMP协议，之后即可获取到授权码
+4.授权码可以在网页版邮箱->设置中获取
+5.由于登陆邮箱还需要提供端口号，一般而言，以下提供邮箱端口样例[仅使用SMTP协议]
+		1).QQ邮箱：587
+		2).Outlook：587
+=========================
+是否需要使用邮箱发件功能？(y/默认n):
+`)
+	fmt.Scanln(&needSendMail)
+	if needSendMail == "y" {
+		mailConfig := new(MailConfig)
+		fmt.Print("请输入邮箱完整地址：")
+		fmt.Scanln(&mailConfig.Address)
+		fmt.Print("请输入授权码/密码：")
+		fmt.Scanln(&mailConfig.Pwd)
+		fmt.Print("请输入端口：")
+		fmt.Scanln(&mailConfig.Port)
+		fmt.Println("发件邮箱已保存...\n[若配置信息填写错误，请在程序文件目录下更改]")
+		bytes, _ := json.Marshal(&mailConfig)
+		os.WriteFile("./mailConfig.json", bytes, 0777)
+
+	}
+
 }
 
 // 开始打卡
@@ -252,8 +316,49 @@ func check(userInfo UserInfo, num int) {
 	}
 	bytes, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(bytes))
+	respBody := new(RespBody)
+	_ = json.Unmarshal(bytes, &respBody)
+
+	sendMail(userInfo, respBody.Msg)
+
 	defer resp.Body.Close()
 
+}
+
+func sendMail(userInfo UserInfo, msg string) {
+	senderConfig, _ := os.ReadFile("./mailConfig.json")
+	sender := new(MailConfig)
+	_ = json.Unmarshal(senderConfig, &sender)
+	m := gomail.NewMessage()
+	m.SetHeader("From", sender.Address)
+	m.SetHeader("To", userInfo.Mail)
+	m.SetHeader("Subject", "健康打卡回执")
+	m.SetBody("text/html", `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+<h2>`+msg+`<h2>
+</body>
+</html>
+`)
+	if strings.Contains(sender.Address, "qq.com") {
+		d := gomail.NewDialer("smtp.qq.com", sender.Port, sender.Address, sender.Pwd)
+		if e := d.DialAndSend(m); e != nil {
+			log.Fatalln(e.Error())
+		}
+		return
+	}
+
+	if strings.Contains(sender.Address, "outlook.com") {
+		d := gomail.NewDialer("smtp.office365.com", sender.Port, sender.Address, sender.Pwd)
+		if e := d.DialAndSend(m); e != nil {
+			log.Fatalln(e.Error())
+		}
+		return
+	}
 }
 func getCheckCode(num int, cookies []*http.Cookie) (string, []*http.Cookie) {
 
