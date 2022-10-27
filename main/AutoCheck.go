@@ -308,11 +308,11 @@ func startCheckTea() {
 	timezone, _ := time.LoadLocation("Asia/Shanghai")
 	cronTab := gocron.NewScheduler(timezone)
 	cronTab.Every(1).Day().At(teaTimeConfig).Do(func() {
-
+		for i := range teaList {
+			go checkTea(teaList[i])
+		}
 	})
-	for i := range teaList {
-		go checkTea(teaList[i])
-	}
+
 	cronTab.StartBlocking()
 }
 
