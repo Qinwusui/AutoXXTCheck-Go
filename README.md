@@ -12,7 +12,7 @@
 
 ## 使用说明
 
-- 程序共两个，无后缀的为Linux（`amd_x64`）版本，可在服务器上运行。有exe后缀的为Windows（`amd_x64`）版本，可在PC上测试。无需安装环境，双击或命令行直接运行即可
+- 程序共两个，无后缀的为Linux版本，可在服务器上运行。有exe后缀的为Windows版本，可在PC上测试。无需安装环境，双击或命令行直接运行即可
 
 - 程序不会泄露你的个人信息，所有信息只会存放在本地，以及发送到学习通服务器
 
@@ -23,11 +23,20 @@
    3. 若是Linux 直接在命令窗口中键入以下命令(以Linux x86_64举例)
 
    ```shell
-   sudo chmod 7777 AutoCheck_linux_x86-64 ; ./AutoCheck_linux_x86-64
+   sudo chmod +x AutoCheck_linux_x86-64 ; ./AutoCheck_linux_x86-64
    ```
 
    4. 当程序运行后，可根据程序提示进行操作
 
+### 发件箱相关
+   
+   1. 用户可以通过自定义发件箱达到打卡回执自动发送到指定邮箱
+   2. 程序会将发件箱地址、密码（授权码）存储到可执行文件同一目录下，文件名为mailConfig.json
+   3. 程序目前只支持SMTP协议发送邮件，且仅支持QQMail，OutlookMail，个人建议使用OutlookMail
+   4. 若需使用QQMail发送邮件，则需要在QQMail Web中打开设置，并生成授权码。[参看](https://service.mail.qq.com/cgi-bin/help?subtype=1&&id=28&&no=369)
+   5. 若使用`OutlookMail发送邮件，不需要设置授权码`直接使用邮件地址和密码即可。
+   6. QQMail和OutlookMail都支持`587`端口
+   
 ## 在Android Termux(以下简称终端)上运行
 
    - [参见](https://qa.1r1g.com/sf/ask/2727134721/#)
@@ -37,3 +46,4 @@
      - 在termux中输入`tsu`后回车
      - 输入`echo -e "nameserver 8.8.8.8" > /etc/resolv.conf`后回车
      - 重新启动打卡程序 
+   - 由于tsu并不能作持久性更改，所以每次启动时都需要执行如上语句
