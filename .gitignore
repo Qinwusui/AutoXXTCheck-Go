@@ -4,4 +4,4 @@ AutoCheck.exe
 .vscode
 checkList.json
 config.json
-.test
+test
