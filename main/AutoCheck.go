@@ -305,7 +305,7 @@ func startCheckTea() {
 			collectTeaCInfo()
 		}
 	}
-	timezone, _ := time.LoadLocation("Asia/Shanghai")
+	timezone:= time.FixedZone("UTC",+8*60*60)
 	cronTab := gocron.NewScheduler(timezone)
 	cronTab.Every(1).Day().At(teaTimeConfig).Do(func() {
 		for i := range teaList {
