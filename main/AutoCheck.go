@@ -570,7 +570,7 @@ func getTeaFormData(teaInfo TeaCInfo, cookies []*http.Cookie) string {
 	teaFormData[2].Fields[0].Values[0].Puid = Puid              //PUID
 	teaFormData[2].Fields[0].Values[0].Uname = teaInfo.UserName //姓名
 	teaFormData[4].Fields[0].Values[0].Val = teaInfo.JobNumber  // 工号
-	teaFormData[7].Fields[0].Values[0].Val = teaInfo.ID         // 身份证号
+	teaFormData[5].Fields[0].Values[0].Val = teaInfo.ID         // 身份证号
 	teaFormData[6].Fields[0].Values[0].Val = teaInfo.Phone      // 手机号
 	// teaFormData[10].Fields[0].Values[0].Address = "武昌理工学院" // 位置
 	// teaFormData[10].Fields[0].Values[0].Lng = 0.0          // 位置
