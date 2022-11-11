@@ -113,6 +113,7 @@ type TeaCInfo struct {
 	ID         string `json:"id"`
 	Phone      string `json:"phone"`
 	Pwd        string `json:"pwd"`
+	Position   string `json:"position"`
 	Mail       string `json:"mail"`
 }
 type StuTimeConfig struct {
@@ -185,6 +186,8 @@ func collectTeaCInfo() {
 	fmt.Scanln(&teaCInfo.Phone)
 	fmt.Print("请输入学习通登录密码：")
 	fmt.Scanln(&teaCInfo.Pwd)
+	fmt.Print("请输入打卡地点：")
+	fmt.Scanln(&teaCInfo.Position)
 	fmt.Print("请输入一个邮箱(用于[接收]打卡回执)：")
 	fmt.Scanln(&teaCInfo.Mail)
 	saveTeaCInfo(*teaCInfo)
@@ -305,7 +308,7 @@ func startCheckTea() {
 			collectTeaCInfo()
 		}
 	}
-	timezone:= time.FixedZone("UTC",+8*60*60)
+	timezone := time.FixedZone("UTC", +8*60*60)
 	cronTab := gocron.NewScheduler(timezone)
 	cronTab.Every(1).Day().At(teaTimeConfig).Do(func() {
 		for i := range teaList {
@@ -326,6 +329,8 @@ func startCheckStu() {
 		fmt.Println("列表无待打卡成员,已跳转添加成员")
 		collectStuInfo()
 	}
+
+	//在Android Termux上可能遇到时区解析失败的问题，遇到该问题时使用`timezone := time.FixedZone("UTC",8*60*60*24)`
 	timezone, _ := time.LoadLocation("Asia/Shanghai")
 	cronTab := gocron.NewScheduler(timezone)
 
@@ -421,9 +426,9 @@ func checkStu(userInfo StuInfo, num int) {
 	data := "formId=" + getFormId(num) + "&formAppId=&version=3&formData=" +
 		getStuFormData(userInfo, cookies) +
 		"&ext=&t=1&enc=" + getEnc(num) + "&checkCode=" + checkCode + "&gatherId=0&anonymous=0&uuid=&uniqueCondition=%5B%5D&gverify="
-
 	req, e := http.NewRequest("POST", "https://office.chaoxing.com/data/apps/forms/fore/user/save", bytes.NewBufferString(data))
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Linux; Android 12;) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/101.0.4951.41 Mobile Safari/537.36 Language/zh_CN com.chaoxing.mobile/ChaoXingStudy_3_5.1.4_android_phone_614_74 (@Kalimdor)_482bfb22af77461b96e77e64aa40abc2")
+	req.Header.Add("User-Agent",
+		"Mozilla/5.0 (Linux; Android 12;) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/101.0.4951.41 Mobile Safari/537.36 Language/zh_CN com.chaoxing.mobile/ChaoXingStudy_3_5.1.4_android_phone_614_74 (@Kalimdor)_482bfb22af77461b96e77e64aa40abc2")
 	req.Header.Add("Host", "office.chaoxing.com")
 	req.Header.Add("Connection", "keep-alive")
 	req.Header.Add("Accept", "application/json, text/javascript, */*; q=0.01")
@@ -441,7 +446,6 @@ func checkStu(userInfo StuInfo, num int) {
 	if e != nil {
 		return
 	}
-
 	resp, e := client.Do(req)
 	if e != nil {
 		log.Fatalln(e.Error())
@@ -451,11 +455,8 @@ func checkStu(userInfo StuInfo, num int) {
 	fmt.Println(string(bytes))
 	respBody := new(RespBody)
 	_ = json.Unmarshal(bytes, &respBody)
-
 	sendStuMail(userInfo, respBody.Msg)
-
 	defer resp.Body.Close()
-
 }
 func sendTeaMail(teaInfo TeaCInfo, msg string) {
 	senderConfig, _ := os.ReadFile("./mailConfig.json") //TODO 检查mailConfig完整性
@@ -518,7 +519,6 @@ func sendStuMail(userInfo StuInfo, msg string) {
 		}
 		return
 	}
-
 	if strings.Contains(sender.Address, "outlook.com") {
 		d := gomail.NewDialer("smtp.office365.com", sender.Port, sender.Address, sender.Pwd)
 		if e := d.DialAndSend(m); e != nil {
@@ -567,14 +567,14 @@ func getTeaFormData(teaInfo TeaCInfo, cookies []*http.Cookie) string {
 	teaFormData := TeaFormData{}
 	json.Unmarshal([]byte(originText), &teaFormData)
 	Puid, _ := strconv.Atoi(getUid(cookies))
-	teaFormData[2].Fields[0].Values[0].Puid = Puid              //PUID
-	teaFormData[2].Fields[0].Values[0].Uname = teaInfo.UserName //姓名
-	teaFormData[4].Fields[0].Values[0].Val = teaInfo.JobNumber  // 工号
-	teaFormData[5].Fields[0].Values[0].Val = teaInfo.ID         // 身份证号
-	teaFormData[6].Fields[0].Values[0].Val = teaInfo.Phone      // 手机号
-	// teaFormData[10].Fields[0].Values[0].Address = "武昌理工学院" // 位置
-	// teaFormData[10].Fields[0].Values[0].Lng = 0.0          // 位置
-	// teaFormData[10].Fields[0].Values[0].Lat = 0.0          // 位置
+	teaFormData[2].Fields[0].Values[0].Puid = Puid                 //PUID
+	teaFormData[2].Fields[0].Values[0].Uname = teaInfo.UserName    //姓名
+	teaFormData[4].Fields[0].Values[0].Val = teaInfo.JobNumber     // 工号
+	teaFormData[5].Fields[0].Values[0].Val = teaInfo.ID            // 身份证号
+	teaFormData[6].Fields[0].Values[0].Val = teaInfo.Phone         // 手机号
+	teaFormData[10].Fields[0].Values[0].Address = teaInfo.Position // 位置
+	teaFormData[10].Fields[0].Values[0].Lng = 0.0                  // 位置
+	teaFormData[10].Fields[0].Values[0].Lat = 0.0                  // 位置
 
 	teaFormData[17].Fields[0].Values[0].Val = fmt.Sprintf("%d-%d-%d %d:%d",
 		time.Now().Year(),
@@ -715,8 +715,8 @@ func saveTeaCInfo(teaCInfo TeaCInfo) {
 	teacherList := readTeaCheckList()
 	for i := range teacherList {
 		if teacherList[i].ID == teaCInfo.ID {
-			fmt.Println("该工号已经存在！")
-			return
+			fmt.Println(teaCInfo.ID + " 该工号已经存在！")
+			continue
 		}
 	}
 	teacherList = append(teacherList, teaCInfo)
