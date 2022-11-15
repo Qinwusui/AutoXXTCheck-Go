@@ -408,8 +408,7 @@ func checkTea(teaInfo TeaCInfo) {
 
 	resp, e := client.Do(req)
 	if e != nil {
-		log.Fatalln(e.Error())
-		return
+		fmt.Println(e.Error())
 	}
 	bytes, _ := io.ReadAll(resp.Body)
 	fmt.Println(string(bytes))
@@ -536,8 +535,7 @@ func getCheckCode(num int, cookies []*http.Cookie) (string, []*http.Cookie) {
 	}
 	resp, e := client.Do(req)
 	if e != nil {
-		log.Fatalln(e.Error())
-		return "", nil
+		fmt.Println(e.Error())
 	}
 	defer resp.Body.Close()
 	bytes, _ := io.ReadAll(resp.Body)
